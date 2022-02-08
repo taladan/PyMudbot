@@ -1,6 +1,7 @@
 #! bin/python
 
 import asyncio
+import pyinputplus as pyip
 
 
 class SessionHandler:
@@ -23,7 +24,12 @@ class SessionHandler:
 
 
 if __name__ == "__main__":
+    # Get host & port
+    hostname = pyip.inputURL("What host are we connecting to? ")
+    pt = pyip.inputInt("What port? ")
+
+    # Instantiate session
     session = SessionHandler()
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(session.connect(host="winter.mushpark.com", port=3000))
+    loop.run_until_complete(session.connect(host=hostname, port=pt))
     loop.close()
