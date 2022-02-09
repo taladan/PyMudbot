@@ -4,6 +4,7 @@ include
 lib
 lib64
 share
+testing
 
 #files
 pyvenv.cfg
