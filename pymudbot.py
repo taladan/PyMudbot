@@ -115,13 +115,6 @@ def make_new_bot():
     return (hostname, pt, bot_name, pw)
 
 
-# async def get_config(bot):
-#     db = shelve.open(DB_FILE)
-#     config = db[bot]
-#     db.close()
-#     return config
-
-
 async def intialize():
     """
     Checks for the existance of PyMudbot configuration database.
@@ -132,8 +125,6 @@ async def intialize():
     if DB_PATH.is_file():
         print("PyMudbot database found!  Loading bots...")
         bots = shelve.open(DB_FILE)
-        print(bots)
-        # print(list(bots.items()))
         for bot in bots:
             print(f"Loading {bot}...")
             hostname = bots[bot]["host"]
