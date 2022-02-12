@@ -125,13 +125,15 @@ async def intialize():
     if DB_PATH.is_file():
         print("PyMudbot database found!  Loading bots...")
         bot_db = shelve.open(DB_FILE)
+        bot_tasks = []
         for bot in bot_db:
             print(f"Loading {bot}...")
             hostname = bot_db[bot]["host"]
             port = bot_db[bot]["port"]
             bot_name = bot_db[bot]["name"]
             passwd = bot_db[bot]["passwd"]
-            await run(hostname, port, bot_name, passwd)
+            bot_tasks.append(asyncio.create_task(run(hostname, port, bot_name, passwd)))
+        await asyncio.gather(*bot_tasks)
         bot_db.close()
     else:
         # No DB. Get initial bot config info
@@ -146,7 +148,7 @@ async def run(hostname, port, bot_user, bot_pass):
     try:
         session = SessionHandler(hostname, port, bot_user, bot_pass)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(await session.connect())
+        await session.connect()
         loop.close()
     except KeyboardInterrupt as e:
         print(f"Caught signal {e}. Exiting")
@@ -157,8 +159,6 @@ async def run(hostname, port, bot_user, bot_pass):
         print(e)
         print("Fatal Error. Exiting.")
         raise e
-    finally:
-        sys.exit()
 
 
 def bot_query():
