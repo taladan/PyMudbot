@@ -128,10 +128,10 @@ async def intialize():
         for bot in bots:
             print(f"Loading {bot}...")
             hostname = bots[bot]["host"]
-            pt = bots[bot]["port"]
+            port = bots[bot]["port"]
             bot_name = bots[bot]["name"]
             passwd = bots[bot]["passwd"]
-            await run(hostname, pt, bot_name, passwd)
+            await run(hostname, port, bot_name, passwd)
         bots.close()
     else:
         # No DB. Get initial bot config info
@@ -139,12 +139,12 @@ async def intialize():
         await run(hostname, port, bot, passwd)
 
 
-async def run(hostname, pt, bot_user, bot_pass):
+async def run(hostname, port, bot_user, bot_pass):
     """
     Create session for indivitual bot
     """
     try:
-        session = SessionHandler(hostname, pt, bot_user, bot_pass)
+        session = SessionHandler(hostname, port, bot_user, bot_pass)
         loop = asyncio.get_event_loop()
         loop.run_until_complete(await session.connect())
         loop.close()
