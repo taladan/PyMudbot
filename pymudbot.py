@@ -16,8 +16,11 @@ DB_PATH = Path(MUDBOT_ROOT / DB_FILE)
 
 
 class SessionHandler:
-    def __init__(self, bot, passwd):
+    def __init__(self, host, port, bot, passwd):
+
         self.DEBUG = False
+        self.host = host
+        self.port = port
         self.bot = bot
         self.passwd = passwd
         self.connected = False
@@ -27,11 +30,11 @@ class SessionHandler:
             "get_version": "@version",
         }
 
-    async def connect(self, host: str, port: int):
+    async def connect(self):
         """
         handle connections
         """
-        self.reader, self.writer = await asyncio.open_connection(host, port)
+        self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
         connect_cmd = bytes(f"connect {self.bot} {self.passwd}\n", "utf-8")
 
         while True:
@@ -55,7 +58,10 @@ class SessionHandler:
                     )
 
     async def log(self, bytes_line):
-        # Simple log to file for now
+        """
+        Simple log to file for now
+        this will most likely be replaced with logger in the near future
+        """
         with open("mudbot.log", "ab") as logfile:
             logfile.write(bytes_line)
         if self.DEBUG:
@@ -85,42 +91,71 @@ class SessionHandler:
         return await self.reader.readline()
 
 
-def initialize_bot():
+def make_new_bot():
     """
-    This checks for the existance of PyMudbot configuration database.
+    Create new bot in the database
+    The Data structure is as follows:
+        db.bots = {"Bot1":{"name":"Botname", "host":"host.web.address", "port": PORTINT, "passwd":"bot_passwd"},
+            "Bot2":{"name":"Botname2", "host":"host.web.address", "port": PORTINT, "passwd":"bot_passwd"},
+            etc...
+        }
+    """
+    hostname = pyip.inputURL("What host are we connecting to?> ")
+    pt = pyip.inputInt("What port?> ")
+    bot_name = pyip.inputStr("What's the bot name?> ")
+    pw = pyip.inputStr("What's the bot password?> ")
+    bot_file = {
+        bot_name: {"name": bot_name, "host": hostname, "port": pt, "passwd": pw}
+    }
+
+    # Write to shelf
+    db = shelve.open(DB_FILE)
+    db.update(bot_file)
+    db.close()
+    return (hostname, pt, bot_name, pw)
+
+
+# async def get_config(bot):
+#     db = shelve.open(DB_FILE)
+#     config = db[bot]
+#     db.close()
+#     return config
+
+
+async def intialize():
+    """
+    Checks for the existance of PyMudbot configuration database.
     If the database exists, load the database and return it.
-    If the database doesn't exist, create the database, prompt for values
-    write the info entered, then return that info.
+    If not, make a new bot
     """
-    print("Initializing PyMudBot")
+    print("Running PyMudBot initialization sequence...")
     if DB_PATH.is_file():
-        with shelve.open(DB_FILE) as db:
-            hostname = db["hostname"]
-            pt = db["mud_port"]
-            bot_user = db["bot_user"]
-            bot_pass = db["bot_pass"]
+        print("PyMudbot database found!  Loading bots...")
+        bots = shelve.open(DB_FILE)
+        print(bots)
+        # print(list(bots.items()))
+        for bot in bots:
+            print(f"Loading {bot}...")
+            hostname = bots[bot]["host"]
+            pt = bots[bot]["port"]
+            bot_name = bots[bot]["name"]
+            passwd = bots[bot]["passwd"]
+            await run(hostname, pt, bot_name, passwd)
+        bots.close()
     else:
         # No DB. Get initial bot config info
-        hostname = pyip.inputURL("What host are we connecting to?> ")
-        pt = pyip.inputInt("What port?> ")
-        bot_user = pyip.inputStr("What's the bot name?> ")
-        bot_pass = pyip.inputStr("What's the bot password?> ")
-
-        with shelve.open(DB_FILE) as db:
-            db["hostname"] = hostname
-            db["mud_port"] = pt
-            db["bot_user"] = bot_user
-            db["bot_pass"] = bot_pass
-    return (hostname, pt, bot_user, bot_pass)
+        hostname, port, bot, passwd = make_new_bot()
+        await run(hostname, port, bot, passwd)
 
 
-def run(hostname, pt, bot_user, bot_pass):
-    # Instantiate session
-    print("Setting up session")
+async def run(hostname, pt, bot_user, bot_pass):
+    """
+    Create session for indivitual bot
+    """
     try:
-        session = SessionHandler(bot_user, bot_pass)
+        session = SessionHandler(hostname, pt, bot_user, bot_pass)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(session.connect(host=hostname, port=pt))
+        loop.run_until_complete(await session.connect())
         loop.close()
     except KeyboardInterrupt as e:
         print(f"Caught signal {e}. Exiting")
@@ -135,7 +170,19 @@ def run(hostname, pt, bot_user, bot_pass):
         sys.exit()
 
 
+def bot_query():
+    """
+    Query user for new bot creation
+    """
+    response = pyip.inputYesNo("Should I make a new bot? ", default="No", timeout=5.0)
+    return True if response == "yes" else False
+
+
 if __name__ == "__main__":
 
-    hostname, port, bot_name, password = initialize_bot()
-    run(hostname, port, bot_name, password)
+    response = bot_query()
+    while response:
+        hostname, port, bot_name, _ = make_new_bot()
+        print(f"Created new bot ({bot_name}) for {hostname} at port #{port}.")
+        response = bot_query()
+    asyncio.run(intialize())
