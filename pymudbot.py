@@ -109,9 +109,9 @@ def make_new_bot():
     }
 
     # Write to shelf
-    db = shelve.open(DB_FILE)
-    db.update(bot_file)
-    db.close()
+    bot_db = shelve.open(DB_FILE)
+    bot_db.update(bot_file)
+    bot_db.close()
     return (hostname, pt, bot_name, pw)
 
 
@@ -124,15 +124,15 @@ async def intialize():
     print("Running PyMudBot initialization sequence...")
     if DB_PATH.is_file():
         print("PyMudbot database found!  Loading bots...")
-        bots = shelve.open(DB_FILE)
-        for bot in bots:
+        bot_db = shelve.open(DB_FILE)
+        for bot in bot_db:
             print(f"Loading {bot}...")
-            hostname = bots[bot]["host"]
-            port = bots[bot]["port"]
-            bot_name = bots[bot]["name"]
-            passwd = bots[bot]["passwd"]
+            hostname = bot_db[bot]["host"]
+            port = bot_db[bot]["port"]
+            bot_name = bot_db[bot]["name"]
+            passwd = bot_db[bot]["passwd"]
             await run(hostname, port, bot_name, passwd)
-        bots.close()
+        bot_db.close()
     else:
         # No DB. Get initial bot config info
         hostname, port, bot, passwd = make_new_bot()
