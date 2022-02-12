@@ -23,6 +23,7 @@ class SessionHandler:
                 asyncio.sleep(0.25)
                 continue
             else:
+                tn_conn = self.telnet_handler(msg)
                 response = await self.handle_msg(msg)
 
     async def log(self, msg):
@@ -39,18 +40,28 @@ class SessionHandler:
         out_events = list()
         frame, size = mt.TelnetFrame.parse(msg)
         processed_frame = tn_conn.process_frame(frame, out_buffer, out_events)
-        if processed_frame[0]:
-            print("foo")
+        # print(processed_frame)
+        if out_buffer:
+            print("Outbuffer received")
+            print(out_buffer)
+            print(out_buffer.decode(encoding="utf-8", errors="ignore"))
+            print("Processed frame:")
+            print(processed_frame)
+            print("Unprocessed frame:")
+            print(frame.data[0])
+            print(out_events)
 
     async def handle_msg(self, msg):
         """
         This will handle incoming messages, negotiate telnet options, etc.
         """
-        reply = self.telnet_handler(msg)
         self.logTask = asyncio.create_task(self.log(msg))
         await self.logTask
-        response = None
-        return response or reply
+        text = msg.decode(encoding="utf-8", errors="ignore")
+        if "connect" in text.lower():
+            print("Found Connect!")
+            await self.writer.drain()
+            self.writer.write_eof
 
     async def request(self, msg):
         self.writer.write(msg)
@@ -60,8 +71,11 @@ class SessionHandler:
 if __name__ == "__main__":
 
     # Get host & port
+    # TODO: Uncomment before push
     hostname = pyip.inputURL("What host are we connecting to? ")
     pt = pyip.inputInt("What port? ")
+    bot_user = pyip.inputStr("What's the bot name?")
+    bot_pass = pyip.inputStr("What's the bot password?")
 
     # Instantiate session
     session = SessionHandler()
