@@ -88,6 +88,9 @@ class SessionHandler:
             return True
 
     async def request(self, bytes_line):
+        """
+        Currently unused
+        """
         self.writer.write(bytes_line)
         return await self.reader.readline()
 
@@ -154,6 +157,15 @@ def user_query(question):
 
 
 def start_menu():
+    """
+    Display a menu of options when starting from `if __name__ == '__main__':`
+    This menu allows for dealing with bots pre-connection.  Current options are:
+        - Add Bot -> Allows for adding of bot to config db
+        - Delete Bot -> Allows for deletion of existing bot from config db
+        - Edit Bot -> Allows for editing of bot attributes in config db
+        - Connect Existing Bots -> Connects all bots
+        - QUIT -> Exits PyMudbot
+    """
     options = ["Add Bot", "Delete Bot", "Edit Bot", "Connect existing Bots", "QUIT"]
     start = True
     while start:
@@ -180,19 +192,20 @@ def start_menu():
             sys.exit()
 
 
-def edit_bot(bot):
+def edit_bot(bot: str) -> None:
     """
     Edit database entry of {bot}
     """
     if bot == None:
         return bot
     else:
-        bots = shelve.open(DB_FILE, writeback=True)
+        bots = shelve.open(
+            DB_FILE, writeback=True
+        )  # Need writeback because we're changing values
         atts = list(bots[bot].keys())
-        atts.append("BACK")
+        atts.append("BACK")  # Opt for exit without editting
         bot_obj = bots[bot]
         choice = pyip.inputMenu(atts, numbered=True)
-        print("-" * 10 + choice + "-" * 10)
         if choice == "BACK":
             bots.close()
             return None
@@ -244,9 +257,10 @@ def delete_bot(bot):
     if bot == None:
         return bot
     elif bot in bot_database:
-        response = user_query(
-            f"Are you sure you want to delete {bot}? <WARNING: This cannot be undone> "
+        prompt = (
+            f"Are you sure you want to delete {bot}? <WARNING: This cannot be undone!> "
         )
+        response = user_query(prompt)
         if response:
             # Delete bot from database
             del bot_database[bot]
