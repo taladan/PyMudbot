@@ -114,7 +114,13 @@ async def intialize():
         bot_db.close()
     else:
         # No DB. Get initial bot config info
-        hostname, port, bot, passwd = add_bot()
+        print("No config found, creating new bot.")
+        while True:
+            bot_info = add_bot()
+            if bot_info != None:
+                hostname, port, bot, passwd = bot_info
+                break
+
         await run(hostname, port, bot, passwd)
 
 
@@ -149,12 +155,14 @@ def user_query(question):
 
 def start_menu():
     options = ["Add Bot", "Delete Bot", "Edit Bot", "Connect existing Bots", "QUIT"]
-    response = pyip.inputMenu(options, numbered=True)
     start = True
     while start:
+        response = pyip.inputMenu(options, numbered=True)
         if response == "Add Bot":
-            hostname, port, bot_name, _ = add_bot()
-            print(f"Created new bot ({bot_name}) for {hostname} at port #{port}.")
+            print("Adding bot to config:")
+            bot_info = add_bot()
+            if bot_info != None:
+                hostname, port, bot_name, _ = add_bot()
             continue
         elif response == "Delete Bot":
             print("Delete Bot:")
@@ -165,6 +173,7 @@ def start_menu():
             edit_bot(choose_bot())
             continue
         elif response == "Connect existing Bots":
+            print("Connecting existing bots:")
             start = False
         elif response == "QUIT":
             print("Quitting...")
@@ -173,14 +182,39 @@ def start_menu():
 
 def edit_bot(bot):
     """
-    Edits database entry of {bot}
+    Edit database entry of {bot}
     """
-    bots = shelve.open(DB_FILE)
-    edit_object = bots[bot]
-    atts = list(edit_object.keys())
-    choice = pyip.inputMenu(atts, numbered=True)
-    # TODO: Handle choices
-    return None
+    if bot == None:
+        return bot
+    else:
+        bots = shelve.open(DB_FILE, writeback=True)
+        atts = list(bots[bot].keys())
+        atts.append("BACK")
+        bot_obj = bots[bot]
+        choice = pyip.inputMenu(atts, numbered=True)
+        print("-" * 10 + choice + "-" * 10)
+        if choice == "BACK":
+            bots.close()
+            return None
+        else:
+            original = current = bot_obj[choice]
+            prompt = f"What would you like to change {choice} to? "
+
+            print(f"Original value of {choice}: {original}")
+            if isinstance(current, int):
+                new = pyip.inputInt(prompt + "[INT] > ")
+                bot_obj.update({choice: new})
+            elif isinstance(current, bool):
+                new = pyip.inputBool(prompt + "[BOOLEAN] > ")
+                bot_obj.update({choice: new})
+            elif isinstance(current, str):
+                new = pyip.inputStr(prompt + "[STRING] > ")
+                bot_obj.update({choice: new})
+
+            print(f"Value of {choice} changed from {original} to {current} on {bot}.")
+
+        bots.close()
+        return None
 
 
 def choose_bot():
@@ -190,9 +224,15 @@ def choose_bot():
     print("Choosing Bot:")
     bots = shelve.open(DB_FILE)
     botnames = list(bots.keys())
-    choice = pyip.inputMenu(botnames, numbered=True)
-    bots.close()
-    return choice
+    choices = botnames.copy()
+    choices.append("BACK")
+    choice = pyip.inputMenu(choices, numbered=True)
+    if choice not in botnames:
+        bots.close()
+        return None
+    else:
+        bots.close()
+        return choice
 
 
 def delete_bot(bot):
@@ -201,7 +241,9 @@ def delete_bot(bot):
     Warning!  This cannot be undone!
     """
     bot_database = shelve.open(DB_FILE)
-    if bot in bot_database:
+    if bot == None:
+        return bot
+    elif bot in bot_database:
         response = user_query(
             f"Are you sure you want to delete {bot}? <WARNING: This cannot be undone> "
         )
@@ -230,12 +272,20 @@ def add_bot():
     bot_file = {
         bot_name: {"name": bot_name, "host": hostname, "port": pt, "passwd": pw}
     }
-
-    # Write to shelf
-    bot_db = shelve.open(DB_FILE)
-    bot_db.update(bot_file)
-    bot_db.close()
-    return (hostname, pt, bot_name, pw)
+    prompt = f"""Adding {bot_name} to the bot config database with password: {pw}
+    To connect to the server {hostname} at port {pt}.
+    
+    Is this correct?"""
+    confirm = user_query(prompt)
+    if user_query:
+        # Write to shelf
+        bot_db = shelve.open(DB_FILE)
+        bot_db.update(bot_file)
+        bot_db.close()
+        return (hostname, pt, bot_name, pw)
+    else:
+        print("Cancelling input of bot. Returning to main menu.")
+        return None
 
 
 if __name__ == "__main__":
