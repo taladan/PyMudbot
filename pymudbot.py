@@ -1,6 +1,9 @@
 #! bin/python
 
 import asyncio
+from email import header
+from pyexpat import version_info
+from xml.etree.ElementTree import VERSION
 import mudtelnet as mt
 import os
 import pyinputplus as pyip
@@ -14,6 +17,10 @@ from getpass import getpass
 DB_FILE = "bot_config.db"
 MUDBOT_ROOT = Path.cwd()
 DB_PATH = Path(MUDBOT_ROOT / DB_FILE)
+PROG_NAME = "PyMudbot"
+VERSION = 0.1
+AUTHOR = "D. J. Crosby"
+WEBSITE = "https://github.com/taladan/PyMudbot"
 
 
 class SessionHandler:
@@ -166,9 +173,16 @@ def start_menu():
         - Connect Existing Bots -> Connects all bots
         - QUIT -> Exits PyMudbot
     """
+    header_line = "*" * 45
+    menu_header = f"{PROG_NAME} v.{VERSION} Bot Config Menu"
     options = ["Add Bot", "Delete Bot", "Edit Bot", "Connect existing Bots", "QUIT"]
     start = True
     while start:
+        print()
+        print(header_line)
+        print(menu_header.center(len(header_line)))
+        print(header_line)
+        print("\n")
         response = pyip.inputMenu(options, numbered=True)
         if response == "Add Bot":
             print("Adding bot to config:")
