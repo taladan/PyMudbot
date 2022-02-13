@@ -49,7 +49,7 @@ Cribbed from: [Stackoverflow](https://stackoverflow.com/questions/38562891/how-t
 	- [x] write to db (shelf file)
 - [x] if bots exist in db, load bot configs
 - [ ] connect to bot(s)
-	- [ ] Connect to all bots
+	- [x] Connect to all bots
 	- [ ] Choose which bots to connect
 - [x] Start menu:
 	- [x] Add Bot
@@ -85,4 +85,3 @@ Cribbed from: [Stackoverflow](https://stackoverflow.com/questions/38562891/how-t
 - [ ] How to respond to state
 - [ ] Remember players (?)
 - [ ] Remember player commands (?)
- 
