@@ -7,6 +7,7 @@ import pyinputplus as pyip
 import shelve
 import sys
 from pathlib import Path
+from getpass import getpass
 
 # CONSTANTS
 
@@ -91,30 +92,6 @@ class SessionHandler:
         return await self.reader.readline()
 
 
-def make_new_bot():
-    """
-    Create new bot in the database
-    The Data structure is as follows:
-        db.bots = {"Bot1":{"name":"Botname", "host":"host.web.address", "port": PORTINT, "passwd":"bot_passwd"},
-            "Bot2":{"name":"Botname2", "host":"host.web.address", "port": PORTINT, "passwd":"bot_passwd"},
-            etc...
-        }
-    """
-    hostname = pyip.inputURL("What host are we connecting to?> ")
-    pt = pyip.inputInt("What port?> ")
-    bot_name = pyip.inputStr("What's the bot name?> ")
-    pw = pyip.inputStr("What's the bot password?> ")
-    bot_file = {
-        bot_name: {"name": bot_name, "host": hostname, "port": pt, "passwd": pw}
-    }
-
-    # Write to shelf
-    bot_db = shelve.open(DB_FILE)
-    bot_db.update(bot_file)
-    bot_db.close()
-    return (hostname, pt, bot_name, pw)
-
-
 async def intialize():
     """
     Checks for the existance of PyMudbot configuration database.
@@ -137,7 +114,7 @@ async def intialize():
         bot_db.close()
     else:
         # No DB. Get initial bot config info
-        hostname, port, bot, passwd = make_new_bot()
+        hostname, port, bot, passwd = add_bot()
         await run(hostname, port, bot, passwd)
 
 
@@ -161,19 +138,107 @@ async def run(hostname, port, bot_user, bot_pass):
         raise e
 
 
-def bot_query():
+def user_query(question):
     """
     Query user for new bot creation
     """
-    response = pyip.inputYesNo("Should I make a new bot? ", default="No", timeout=5.0)
+    df = "No"
+    response = pyip.inputYesNo(question + f" [Default: {df}]", default=df, blank=True)
     return True if response == "yes" else False
+
+
+def start_menu():
+    options = ["Add Bot", "Delete Bot", "Edit Bot", "Connect existing Bots", "QUIT"]
+    response = pyip.inputMenu(options, numbered=True)
+    start = True
+    while start:
+        if response == "Add Bot":
+            hostname, port, bot_name, _ = add_bot()
+            print(f"Created new bot ({bot_name}) for {hostname} at port #{port}.")
+            continue
+        elif response == "Delete Bot":
+            print("Delete Bot:")
+            print(delete_bot(choose_bot()))
+            continue
+        elif response == "Edit Bot":
+            print("Edit Bot:")
+            edit_bot(choose_bot())
+            continue
+        elif response == "Connect existing Bots":
+            start = False
+        elif response == "QUIT":
+            print("Quitting...")
+            sys.exit()
+
+
+def edit_bot(bot):
+    """
+    Edits database entry of {bot}
+    """
+    bots = shelve.open(DB_FILE)
+    edit_object = bots[bot]
+    atts = list(edit_object.keys())
+    choice = pyip.inputMenu(atts, numbered=True)
+    # TODO: Handle choices
+    return None
+
+
+def choose_bot():
+    """
+    Allows menu-ized choice of bots that exist in database
+    """
+    print("Choosing Bot:")
+    bots = shelve.open(DB_FILE)
+    botnames = list(bots.keys())
+    choice = pyip.inputMenu(botnames, numbered=True)
+    bots.close()
+    return choice
+
+
+def delete_bot(bot):
+    """
+    Removes a bot from the database.
+    Warning!  This cannot be undone!
+    """
+    bot_database = shelve.open(DB_FILE)
+    if bot in bot_database:
+        response = user_query(
+            f"Are you sure you want to delete {bot}? <WARNING: This cannot be undone> "
+        )
+        if response:
+            # Delete bot from database
+            del bot_database[bot]
+            ret = f"Deleted {bot}"
+    else:
+        ret = f"{bot} not found in database."
+    return ret
+
+
+def add_bot():
+    """
+    Create new bot in the database
+    The Data structure is as follows:
+        db.bots = {"Bot1":{"name":"Botname", "host":"host.web.address", "port": PORTINT, "passwd":"bot_passwd"},
+            "Bot2":{"name":"Botname2", "host":"host.web.address", "port": PORTINT, "passwd":"bot_passwd"},
+            etc...
+        }
+    """
+    hostname = pyip.inputURL("Enter hostname:> ")
+    pt = pyip.inputInt("Enter port number:> ")
+    bot_name = pyip.inputStr("Enter bot name:> ")
+    pw = getpass("Enter bot password:> ")
+    bot_file = {
+        bot_name: {"name": bot_name, "host": hostname, "port": pt, "passwd": pw}
+    }
+
+    # Write to shelf
+    bot_db = shelve.open(DB_FILE)
+    bot_db.update(bot_file)
+    bot_db.close()
+    return (hostname, pt, bot_name, pw)
 
 
 if __name__ == "__main__":
 
-    response = bot_query()
-    while response:
-        hostname, port, bot_name, _ = make_new_bot()
-        print(f"Created new bot ({bot_name}) for {hostname} at port #{port}.")
-        response = bot_query()
+    start_menu()
     asyncio.run(intialize())
