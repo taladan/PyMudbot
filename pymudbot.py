@@ -1,9 +1,6 @@
 #! bin/python
 
 import asyncio
-from email import header
-from pyexpat import version_info
-from xml.etree.ElementTree import VERSION
 import mudtelnet as mt
 import os
 import pyinputplus as pyip
