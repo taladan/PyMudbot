@@ -51,10 +51,19 @@ Cribbed from: [Stackoverflow](https://stackoverflow.com/questions/38562891/how-t
 - [ ] connect to bot(s)
 	- [x] Connect to all bots
 	- [ ] Choose which bots to connect
-- [x] Start menu:
-	- [x] Add Bot
-	- [x] Edit Bot
-	- [x] Delete Bot
+- [ ] PyMudbot Menus:
+	- [x] Start menu:
+		- [x] Build menu functionality
+		- [x] Add program info and prettify
+	- [ ] Add Bot
+		- [x] Build menu functionality
+		- [ ] Add program info and prettify
+	- [ ] Edit Bot
+		- [x] Build menu functionality
+		- [ ] Add program info and prettify
+	- [ ] Delete Bot
+		- [x] Build menu functionality
+		- [ ] Add program info and prettify
 	- [x] QUIT
 
 ### Connection
