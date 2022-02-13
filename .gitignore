@@ -7,4 +7,6 @@ share
 testing
 
 #files
+bot_config.db
+mudbot.log
 pyvenv.cfg
