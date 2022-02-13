@@ -272,19 +272,20 @@ def add_bot():
     bot_file = {
         bot_name: {"name": bot_name, "host": hostname, "port": pt, "passwd": pw}
     }
-    prompt = f"""Adding {bot_name} to the bot config database with password: {pw}
+    prompt = f"""
+    Adding {bot_name} to the bot config database with password: {pw}
     To connect to the server {hostname} at port {pt}.
     
     Is this correct?"""
     confirm = user_query(prompt)
-    if user_query:
+    if confirm:
         # Write to shelf
         bot_db = shelve.open(DB_FILE)
         bot_db.update(bot_file)
         bot_db.close()
         return (hostname, pt, bot_name, pw)
     else:
-        print("Cancelling input of bot. Returning to main menu.")
+        print("Input Cancelled: Bot not created.")
         return None
 
 
